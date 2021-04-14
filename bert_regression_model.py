@@ -55,9 +55,9 @@ def create_dataset(which_set):
     one_hot_labels = []
     for label in labels:
         if len(label) == 0:
-            one_hot_labels.append(0)
+            one_hot_labels.append(0)  # 0 = no propaganda
         else:
-            one_hot_labels.append(1)
+            one_hot_labels.append(1)  # 1 = propaganda
 
     # Create Text array
     texts = []
@@ -112,44 +112,51 @@ def get_features_and_labels_with_bert(df):
     return features, labels
 
 
-# PARAMETERS
-saveto = False
-loadfrom = True
+if __name__ == "__main__":
 
-# Create datasets
-df_train = create_dataset('train')
-df_test = create_dataset('test')
+    # PARAMETERS
+    saveto = False
+    loadfrom = False
+    savemodel = False
 
-# Use Bert for features and labels
-train_features, train_labels = get_features_and_labels_with_bert(df_train)
-test_features, test_labels = get_features_and_labels_with_bert(df_test)
+    # Create datasets
+    df_train = create_dataset('train')
+    df_test = create_dataset('test')
 
-# Save features and labels to pickle
-if saveto:
-    save_to_pickle(train_features, 'train_features')
-    save_to_pickle(train_labels, 'train_labels')
-    save_to_pickle(test_features, 'test_features')
-    save_to_pickle(test_labels, 'test_labels')
+    # Use Bert for features and labels
+    train_features, train_labels = get_features_and_labels_with_bert(df_train)
+    test_features, test_labels = get_features_and_labels_with_bert(df_test)
 
-# Load features and labels from pickle
-if loadfrom:
-    train_features = load_from_pickle('train_features')
-    train_labels = load_from_pickle('train_labels')
-    test_features = load_from_pickle('test_features')
-    test_labels = load_from_pickle('test_labels')
+    # Save features and labels to pickle
+    if saveto:
+        save_to_pickle(train_features, 'train_features')
+        save_to_pickle(train_labels, 'train_labels')
+        save_to_pickle(test_features, 'test_features')
+        save_to_pickle(test_labels, 'test_labels')
+
+    # Load features and labels from pickle
+    if loadfrom:
+        train_features = load_from_pickle('train_features')
+        train_labels = load_from_pickle('train_labels')
+        test_features = load_from_pickle('test_features')
+        test_labels = load_from_pickle('test_labels')
 
 
-######## Logistic Regression #########
-# Fit Model
-lr_clf = LogisticRegression(solver='lbfgs', max_iter=200)
-lr_clf.fit(train_features, train_labels)
+    ######## Logistic Regression #########
+    # Fit Model
+    lr_clf = LogisticRegression(solver='lbfgs', max_iter=200)
+    lr_clf.fit(train_features, train_labels)
 
-# Evaluation
-score = lr_clf.score(test_features, test_labels)
-print("Score is", score)
+    # Save Model
+    if savemodel:
+        save_to_pickle(lr_clf, "logistic_regression_model")
 
-# Comparison
-clf = DummyClassifier()
+    # Evaluation
+    score = lr_clf.score(test_features, test_labels)
+    print("Score is", score)
 
-scores = cross_val_score(clf, train_features, train_labels)
-print("Dummy classifier score: %0.3f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+    # Comparison
+    clf = DummyClassifier()
+
+    scores = cross_val_score(clf, train_features, train_labels)
+    print("Dummy classifier score: %0.3f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
