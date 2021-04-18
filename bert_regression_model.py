@@ -62,8 +62,8 @@ def create_dataset(which_set):
     # Create Text array
     texts = []
     for da in data:
-        texts.append(da['text'])
-
+        texts.append(da['text'].replace("\n", " "))
+    
     # Create Pandas Dataframe
     data = {'text': texts,
             'label': one_hot_labels
