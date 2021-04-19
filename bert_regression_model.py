@@ -11,6 +11,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
 from sklearn.dummy import DummyClassifier
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn import metrics
 
 def save_to_pickle(dataset, fileloc):
     """
@@ -116,23 +119,13 @@ if __name__ == "__main__":
 
     # PARAMETERS
     saveto = False
-    loadfrom = False
+    loadfrom = True
     savemodel = False
 
     # Create datasets
     df_train = create_dataset('train')
     df_test = create_dataset('test')
-
-    # Use Bert for features and labels
-    train_features, train_labels = get_features_and_labels_with_bert(df_train)
-    test_features, test_labels = get_features_and_labels_with_bert(df_test)
-
-    # Save features and labels to pickle
-    if saveto:
-        save_to_pickle(train_features, 'train_features')
-        save_to_pickle(train_labels, 'train_labels')
-        save_to_pickle(test_features, 'test_features')
-        save_to_pickle(test_labels, 'test_labels')
+    df_dev = create_dataset('dev')
 
     # Load features and labels from pickle
     if loadfrom:
@@ -140,7 +133,22 @@ if __name__ == "__main__":
         train_labels = load_from_pickle('train_labels')
         test_features = load_from_pickle('test_features')
         test_labels = load_from_pickle('test_labels')
+        dev_features = load_from_pickle('dev_features')
+        dev_labels = load_from_pickle('dev_labels')
+    else:
+        # Use Bert for features and labels
+        train_features, train_labels = get_features_and_labels_with_bert(df_train)
+        test_features, test_labels = get_features_and_labels_with_bert(df_test)
+        dev_features, dev_labels = get_features_and_labels_with_bert(df_dev)
 
+    # Save features and labels to pickle
+    if saveto:
+        save_to_pickle(train_features, 'train_features')
+        save_to_pickle(train_labels, 'train_labels')
+        save_to_pickle(test_features, 'test_features')
+        save_to_pickle(test_labels, 'test_labels')
+        save_to_pickle(dev_features, 'dev_features')
+        save_to_pickle(dev_labels, 'dev_labels')
 
     ######## Logistic Regression #########
     # Fit Model
@@ -151,12 +159,30 @@ if __name__ == "__main__":
     if savemodel:
         save_to_pickle(lr_clf, "logistic_regression_model")
 
-    # Evaluation
+    # EVALUATION
+
+    # Evaluation with test set
     score = lr_clf.score(test_features, test_labels)
-    print("Score is", score)
+    print("Test Score is", score)
+
+    # Evaluation with dev set
+    score = lr_clf.score(dev_features, dev_labels)
+    print("Dev Score is", score)
 
     # Comparison
     clf = DummyClassifier()
 
     scores = cross_val_score(clf, train_features, train_labels)
     print("Dummy classifier score: %0.3f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+    # Confusion Matrix
+    predictions = lr_clf.predict(test_features)
+    cm = metrics.confusion_matrix(test_labels, predictions)
+
+    plt.figure(figsize=(9, 9))
+    sns.heatmap(cm, annot=True, fmt=".3f", linewidths=.5, square = True, cmap = 'Blues_r')
+    plt.ylabel('Actual label')
+    plt.xlabel('Predicted label')
+    all_sample_title = 'Accuracy Score: {0}'.format(score)
+    plt.title(all_sample_title, size = 15)
+    plt.show()
